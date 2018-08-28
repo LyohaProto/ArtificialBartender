@@ -26,8 +26,8 @@ def capture_loop():
         "age_gender_models/gender_net.caffemodel")
 
     print('Loading Haar Cascades')
-    faceCascade = cv2.CascadeClassifier('venv/lib/python3.6/site-packages/cv2/data/haarcascade_frontalface_default.xml')
-    smileCascade = cv2.CascadeClassifier('venv/lib/python3.6/site-packages/cv2/data/haarcascade_smile.xml')
+    faceCascade = cv2.CascadeClassifier('haar_cascades/haarcascade_frontalface_default.xml')
+    smileCascade = cv2.CascadeClassifier('haar_cascades/haarcascade_smile.xml')
 
     print('Initializing webcam')
     # grab the reference to the webcam
