@@ -1,182 +1,274 @@
 import random
+import textwrap
+import tkinter
 from time import sleep, time
+from tkinter import *
+from tkinter import messagebox
 
-import cv2
 import pyttsx3
 
-APP_WINDOW_TITLE = "Artificial Bartender"
+from image_processor import ImageProcessor
+import cv2
+from PIL import ImageTk, Image, ImageDraw, ImageFont
 
-# Configuring text-to-speech
-tts_engine = pyttsx3.init()
-voices = tts_engine.getProperty('voices')
-rate = tts_engine.getProperty('rate')
-tts_engine.setProperty('rate', rate - 60)
-
-FACE_SIZE_TO_OFFER_DRINK = 150
 WEBCAM_RES_W = 800
 WEBCAM_RES_H = 600
-
-age_list=['AGE_0-2','AGE_4-6','AGE_8-12','AGE_15-20','AGE_25-32','AGE_38-43','AGE_48-53','AGE_60-100']
-gender_list = ['MALE', 'FEMALE']
+FACE_TRIGGER_WIDTH = 250
+ATTRACT_CUSTOMERS_INTERVAL = 15
+TEXT_MAX_LENGTH = 80
 
 PHRASES = {
     'COME_CLOSER': [
-        'Hey, I see you! Come closer!',
+        'Hey, I can see you! Come closer!',
         "Don't be shy! Come closer and I'll choose a drink for you.",
-        'Hey! Come here!'
+        'Hey! Come here!',
+        "Don't be afraid, human! A robot may not injure a human being or, through inaction, allow a human being to come to harm."
     ],
-    'AGE_0-2': [
-        'Are you sure you are old enough to get a drink?'
+    'GREETINGS': {
+        'FORMAL': [
+            'Bon jour',
+            'Greetings',
+            'Good evening',
+            'Hello'
+        ],
+        'INFORMAL': [
+            'Hi',
+            "What's up",
+            'Hey hey hey'
+        ]
+    },
+    'PROMPTS': {
+        'FEMALE_INFORMAL': [
+            'beautiful',
+            'gorgeous',
+            'female human'
+        ],
+        'FEMALE_FORMAL': [
+            'madame'
+        ],
+        'MALE_INFORMAL': [
+            'dude',
+            'fella',
+            'buddy',
+            'bro',
+            'kiddo',
+            'mate'
+        ],
+        'MALE_FORMAL': [
+            'mister',
+            'sir',
+            'male human'
+        ]
+    },
+    'PHRASES': {
+        'FEMALE_INFORMAL': [
+            "You look so good that I'll have to ask you for an ID."
+        ],
+        'FEMALE_FORMAL': [
+            'Do you still get asked for ID?'
+        ],
+        'MALE_INFORMAL': [
+            "Looking for something to drink?",
+            "Lookin' for a drink to relax after a busy day?",
+        ],
+        'MALE_FORMAL': [
+            'Are you sure you are old enough to get a drink?',
+            "You look so good that I'll have to ask you for an ID. Just kidding. I'm a robot, you know...",
+            'Do you still get asked for ID?'
+        ]
+    },
+    'WHY_SO_SAD': [
+        'Why so serious?',
+        "I'm sure you need something to cheer up!"
     ],
-    'AGE_4-6': [
-        'Are you sure you are old enough to get a drink?'
-    ],
-    'AGE_8-12': [
-        "Are you sure you are old enough to get a drink?"
-    ],
-    'AGE_15-20': [
-        "You look so good that I'll have to ask you for an ID"
-    ],
-    'AGE_25-32': [
-        "Looking for something to drink?"
-    ],
-    'AGE_38-43': [
-        "Lookin' for a drink to relax after a busy day?"
-    ],
-    'AGE_48-53': [
-        "Lookin' for something that helps you to relax after a busy day?"
-    ],
-    'AGE_60-100': [
-        'Hello sir!'
-    ],
-    'MALE': [
-        'man',
-        'dude',
-        'fella',
-        'buddy',
-        'bro',
-        'kiddo',
-        'mate'
-    ],
-    'FEMALE': [
-        'beautiful',
-        'gorgeous',
-        'female human',
-        'madame'
+    'DRINKS': [
+        'Heineken',
+        'Heineken Light',
+        'Sauvignon Blanc',
+        'Chardonnay',
+        'Pinot Gris',
+        'Rose',
+        'Pinot Noir'
     ]
 }
 
 
-def init_webcam():
-    # Initializing the webcam
-    vs = cv2.VideoCapture(0)
-    vs.set(3, WEBCAM_RES_W)  # CV_CAP_PROP_FRAME_WIDTH
-    vs.set(4, WEBCAM_RES_H)  # CV_CAP_PROP_FRAME_HEIGHT
+class GUI:
+    def __init__(self, webcam_w=800, webcam_h=600, min_face_width=200):
+        self.root = tkinter.Tk()
+        self.root.title("Artificial Bartender")
 
-    ret = False
-    retry = 0
-    while not ret:
-        ret, frame = vs.read()
-        sleep(0.1)
-        retry += 1
-        assert retry < 30, 'Failed to initialize webcam'
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+        self.root.bind("<Configure>", self.on_resize)
 
-    return vs
+        self.vid_label = Label(self.root, anchor="center", background='black', width=webcam_w, height=webcam_h)
+        self.vid_label.pack(expand=YES, fill=BOTH)
 
+        self.window_width = self.webcam_w = webcam_w
+        self.window_height = self.webcam_h = webcam_h
+        self.image_ratio = float(webcam_w / webcam_h)
+        self.min_face_width = min_face_width
 
-def say_random(text_list, min_interval):
-    global last_phrase_time
-    if globals().get('last_phrase_time') and time() - last_phrase_time < min_interval:
-        return
+        self.cap = None
+        self.start_webcam()
 
-    random.seed(time())
-    tts_engine.say(random.choice(text_list))
-    tts_engine.runAndWait()
-    last_phrase_time = time()
+        # Configuring text-to-speech
+        self.tts_engine = pyttsx3.init()
+        rate = self.tts_engine.getProperty('rate')
+        self.tts_engine.setProperty('rate', rate - 60)
 
+        self.image_processor = ImageProcessor('font.ttf')
+        self.text_font_size = 20
+        self.text_font = ImageFont.truetype('font.ttf', self.text_font_size)
+        self.last_phrase_time = time()
 
-def capture_loop():
-    print('Loading network models...')
-    MODEL_MEAN_VALUES = (78.4263377603, 87.7689143744, 114.895847746)
-    age_net = cv2.dnn.readNetFromCaffe(
-        "age_gender_models/deploy_age.prototxt",
-        "age_gender_models/age_net.caffemodel")
-    gender_net = cv2.dnn.readNetFromCaffe(
-        "age_gender_models/deploy_gender.prototxt",
-        "age_gender_models/gender_net.caffemodel")
+        self.process_webcam()
+        self.root.mainloop()
 
-    print('Loading Haar Cascades')
-    faceCascade = cv2.CascadeClassifier('haar_cascades/haarcascade_frontalface_default.xml')
-    smileCascade = cv2.CascadeClassifier('haar_cascades/haarcascade_smile.xml')
+    def process_webcam(self):
+        ret, frame = self.cap.read()
 
-    print('Initializing webcam')
-    # grab the reference to the webcam
-    webcam = init_webcam()
+        faces = self.image_processor.detect_faces(frame)
 
-    font = cv2.FONT_HERSHEY_SIMPLEX
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame = Image.fromarray(frame)
 
-    # capture frames from the camera
-    while True:
-        ret, frame = webcam.read()
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        faces = faceCascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=8, minSize=(50, 50))
+        self.draw_face_rectangles(faces, frame)
 
-        # Draw a rectangle around every found face
-        for (x, y, w, h) in faces:
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 255, 0), 2)
-            face_gray = gray[y:y + h, x:x + w]
-            face_img = frame[y:y + h, x:x + w].copy()
-            blob = cv2.dnn.blobFromImage(face_img, 1, (227, 227), MODEL_MEAN_VALUES, swapRB=False)
-            # Predict gender
-            gender_net.setInput(blob)
-            gender_preds = gender_net.forward()
-            gender = gender_list[gender_preds[0].argmax()]
-            # Predict age
-            age_net.setInput(blob)
-            age_preds = age_net.forward()
-            age = age_list[age_preds[0].argmax()]
-            # Detect smile
-            smiles = bool(len(smileCascade.detectMultiScale(face_gray, scaleFactor=1.7, minNeighbors=22, minSize=(15, 15))))
-            overlay_text = "%s, %s, smiles: %s" % (gender, age, smiles)
-            cv2.putText(frame, overlay_text, (x-100, y), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
+        # Resizing the whole image
+        if self.window_height > self.webcam_h:
+            frame = frame.resize((int(self.window_height * self.image_ratio), self.window_height))
 
-        if len(faces):
-            if (w >= FACE_SIZE_TO_OFFER_DRINK and h >= FACE_SIZE_TO_OFFER_DRINK):
-                webcam.release()  # Stopping the webcam, otherwise it keeps capturing frames.
+        # Displaying the image on the form
+        self.update_tk_image(frame)
 
-                # Displaying the captured face
-                cv2.imshow(APP_WINDOW_TITLE, frame)
-                cv2.waitKey(10)
+        # Checking if there's a customer
+        served = self.check_for_customers(faces)
 
-                mood = "" if smiles else "Why so serious?"
-                tts_engine.say(f'Hello, {random.choice(PHRASES[gender])}! {mood} {random.choice(PHRASES[age])}')
-                if smiles:
-                    tts_engine.say(f'Would you like some beer?')
+        # Attract customers
+        if not served and len(faces):
+            self.attract_customers(ATTRACT_CUSTOMERS_INTERVAL)
+
+        self.vid_label.after(10, self.process_webcam)
+
+    def check_for_customers(self, faces):
+        for face in faces:
+            if face['xy'][2] >= self.min_face_width:
+                random.seed(time())
+
+                if face['age'] in ['AGE_0-2', 'AGE_4-6', 'AGE_8-12', 'AGE_15-20', 'AGE_25-32']:
+                    style = 'INFORMAL'
                 else:
-                    tts_engine.say(f'Would you like some whiskey?')
-                tts_engine.runAndWait()
-                sleep(4)  # Waiting for the person to go away :)
-                webcam = init_webcam()  # Starting the webcam again
+                    style = 'FORMAL'
 
-                # We don't want Bartender to start calling people right after serving the client.
-                global last_phrase_time
-                last_phrase_time = time()
+                text = textwrap.fill(random.choice(PHRASES["GREETINGS"][style]) + " " + \
+                                     random.choice(PHRASES['PROMPTS'][f"{face['gender']}_{style}"]), TEXT_MAX_LENGTH) + "!\n"
+                if style == 'INFORMAL' and face['smile'] is False:
+                    text += textwrap.fill(random.choice(PHRASES['WHY_SO_SAD']), TEXT_MAX_LENGTH) + "\n"
+                text += textwrap.fill(random.choice(PHRASES['PHRASES'][f"{face['gender']}_{style}"]), TEXT_MAX_LENGTH) + "\n"
+                text += textwrap.fill(f"Would you like some {random.choice(PHRASES['DRINKS'])}?", TEXT_MAX_LENGTH)
+
+                self.say_and_display_text(text)
+
+                self.last_phrase_time = time()
+                return True
+        return False
+
+    def attract_customers(self, interval=10):
+        if time() - self.last_phrase_time > interval:
+            random.seed(time())
+            self.say_and_display_text(textwrap.fill(random.choice(PHRASES['COME_CLOSER']), TEXT_MAX_LENGTH))
+            self.last_phrase_time = time()
+
+    def say_and_display_text(self, text):
+        # Stopping the webcam, otherwise it will continue capturing frames
+        self.stop_webcam()
+        sleep(0.2)
+        # Filling the screen with black, displaying the text and starting the tts engine
+        black_image = Image.new('RGB', (self.webcam_w, self.webcam_h))
+        image_text = ImageDraw.Draw(black_image)
+        image_text.multiline_text((10, 10), text, font=self.text_font, fill=(0, 255, 0, 128))
+
+        # Resizing the whole image
+        if self.window_height > self.webcam_h:
+            black_image = black_image.resize((int(self.window_height * self.image_ratio), self.window_height))
+
+        # Displaying the image on the form
+        self.update_tk_image(black_image)
+        # Starting the TTS
+        self.tts_engine.say(text)
+        self.tts_engine.runAndWait()
+        # Delay before returning back to webcam frames analysis loop
+        self.start_webcam()
+
+    def update_tk_image(self, frame):
+        image = ImageTk.PhotoImage(frame)
+        self.vid_label.configure(image=image)
+        self.vid_label.image = image
+        self.root.update()
+
+    def draw_face_rectangles(self, faces, frame):
+        # Drawing rectangles around the faces
+        image_text = ImageDraw.Draw(frame)
+        for face in faces:
+            x, y, w, h = face['xy']
+            trigger_line_coeff = int((self.min_face_width - w) / 2)
+
+            if trigger_line_coeff > 0:
+                face_rectangle_color = (0, 255, 0)
+
+                image_text.line((x - trigger_line_coeff, y, x - trigger_line_coeff, y + w), fill=(255, 0, 0))
+                image_text.line((x + w + trigger_line_coeff, y, x + w + trigger_line_coeff, y + w), fill=(255, 0, 0))
+
+                face_annotation = f"{face['gender']}, {face['age']}"
+                text_pos_x = x + int((w - image_text.textsize(face_annotation, self.text_font))[0] / 2)
+                image_text.text(
+                    (text_pos_x, y - self.text_font_size - 5),
+                    face_annotation,
+                    font=self.text_font,
+                    fill=(0, 255, 0, 128)
+                )
+
+                face_hint = "Get your face between the red lines"
+                hint_pos_x = x + int((w - image_text.textsize(face_hint, self.text_font))[0] / 2)
+                image_text.text(
+                    (hint_pos_x, y + h + self.text_font_size + 5),
+                    face_hint,
+                    font=self.text_font,
+                    fill=(255, 0, 0, 128)
+                )
             else:
-                cv2.putText(frame, "Please come closer...", (10, 50), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
-                cv2.imshow(APP_WINDOW_TITLE, frame)
-                say_random(PHRASES['COME_CLOSER'], 10)
+                face_rectangle_color = (255, 0, 0)
 
-        # Displaying the processed frame
-        key = cv2.waitKey(10) & 0xFF # We should give cv2 some time to update the image window.
-        cv2.imshow(APP_WINDOW_TITLE, frame)
+            image_text.rectangle([x, y, x + w, y + h], outline=face_rectangle_color)
 
-        # if the `q` key was pressed, break from the loop
-        if key == ord("q"):
-            break
+    def on_closing(self):
+        if messagebox.askokcancel("Quit", "Do you want to quit?"):
+            self.cap.release()
+            self.root.destroy()
 
-    webcam.release()
-    cv2.destroyAllWindows()
+    def on_resize(self, event):
+        self.window_width = int(event.width) - 2
+        self.window_height = int(event.height) - 2
+
+    def start_webcam(self, webcam_number=0):
+        # Initializing the webcam
+        vs = cv2.VideoCapture(webcam_number)
+        vs.set(3, self.webcam_w)  # CV_CAP_PROP_FRAME_WIDTH
+        vs.set(4, self.webcam_h)  # CV_CAP_PROP_FRAME_HEIGHT
+
+        ret = False
+        retry = 0
+        while not ret:
+            ret, frame = vs.read()
+            sleep(0.1)
+            retry += 1
+            assert retry < 30, 'Failed to initialize webcam'
+
+        self.cap = vs
+
+    def stop_webcam(self):
+        self.cap.release()
 
 
-if __name__ == '__main__':
-    capture_loop()
+App = GUI(WEBCAM_RES_W, WEBCAM_RES_H, FACE_TRIGGER_WIDTH)
