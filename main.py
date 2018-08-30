@@ -10,9 +10,9 @@ APP_WINDOW_TITLE = "Artificial Bartender"
 tts_engine = pyttsx3.init()
 voices = tts_engine.getProperty('voices')
 rate = tts_engine.getProperty('rate')
-tts_engine.setProperty('rate', rate - 75)
+tts_engine.setProperty('rate', rate - 60)
 
-FACE_SIZE_TO_OFFER_DRINK = 250
+FACE_SIZE_TO_OFFER_DRINK = 150
 WEBCAM_RES_W = 800
 WEBCAM_RES_H = 600
 
@@ -52,10 +52,16 @@ PHRASES = {
     'MALE': [
         'man',
         'dude',
-        'fella'
+        'fella',
+        'buddy',
+        'bro',
+        'kiddo',
+        'mate'
     ],
     'FEMALE': [
-        'woman',
+        'beautiful',
+        'gorgeous',
+        'female human',
         'madame'
     ]
 }
@@ -83,6 +89,7 @@ def say_random(text_list, min_interval):
     if globals().get('last_phrase_time') and time() - last_phrase_time < min_interval:
         return
 
+    random.seed(time())
     tts_engine.say(random.choice(text_list))
     tts_engine.runAndWait()
     last_phrase_time = time()
