@@ -13,7 +13,7 @@ from PIL import ImageTk, Image, ImageDraw, ImageFont
 
 WEBCAM_RES_W = 800
 WEBCAM_RES_H = 600
-FACE_TRIGGER_WIDTH = 250
+FACE_TRIGGER_WIDTH = 150
 ATTRACT_CUSTOMERS_INTERVAL = 15
 TEXT_MAX_LENGTH = 80
 
@@ -62,27 +62,44 @@ PHRASES = {
     },
     'PHRASES': {
         'FEMALE_INFORMAL': [
-            "You look so good that I'll have to ask you for an ID."
+            "You look so good that I'll have to ask you for an ID.",
+            "Wow, you look amazing, can I get you something to drink?",
+            "It's Friday, you made it! Can I offer you a drink?",
+            "Did the sun just come out or did you just smile at me? Let me buy you a drink.",
+            "You are so beautiful that you made me forget my pickup line. How about a drink instead?",
+            "I have one question. Wine not?"
         ],
         'FEMALE_FORMAL': [
-            'Do you still get asked for ID?'
+            'Do you still get asked for ID?',
+            "Looking for something to drink?",
+            "It's Friday, you made it! Can I offer you a drink?",
+            "Happy Friday! Can I get you something to drink?"
         ],
         'MALE_INFORMAL': [
             "Looking for something to drink?",
             "Lookin' for a drink to relax after a busy day?",
+            "It's Friday, you made it! Can I offer you a drink?",
+            "Happy Friday! Can I get you something to drink?"
         ],
         'MALE_FORMAL': [
             'Are you sure you are old enough to get a drink?',
             "You look so good that I'll have to ask you for an ID. Just kidding. I'm a robot, you know...",
-            'Do you still get asked for ID?'
+            'Do you still get asked for ID?',
+            "It's Friday, you made it! Can I offer you a drink?"
         ]
     },
     'WHY_SO_SAD': [
         'Why so serious?',
-        "I'm sure you need something to cheer up!"
+        "I'm sure you need something to cheer up!",
+        "You look like you could use a drink... or two.",
+        "The answer may not lie at the bottom of a beer bottle, but you should at least check!",
+        "You know what rhymes with Friday? Alcohol! Get some!",
+        "Wine is not the answer. Wine is the question. Yes, is the answer.",
+        "I'm doing my part to conserve water by drinking beer instead, you should try it too."
     ],
     'DRINKS': [
         'Heineken',
+        'Cider',
         'Heineken Light',
         'Sauvignon Blanc',
         'Chardonnay',
