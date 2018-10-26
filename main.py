@@ -47,7 +47,7 @@ PHRASES = {
         ],
         'FEMALE_FORMAL': [
             'madame',
-            'mam',
+            "ma'am",
             'miss'
         ],
         'MALE_INFORMAL': [
