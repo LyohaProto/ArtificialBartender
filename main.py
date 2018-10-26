@@ -112,7 +112,7 @@ PHRASES = {
         'Pinot Gris',
         'Rose',
         'Pinot Noir',
-        'corona',
+        'Corona',
         'Heineken-Lite'
     ]
 }
