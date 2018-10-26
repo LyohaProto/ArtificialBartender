@@ -3,10 +3,11 @@
 *Installation instructions:*
 
 1. (Linux only) install tkinter: `sudo apt-get install python3-tk`
-2. Create virtual environment: `virtualenv venv`
+2. Create virtual environment with python3: `virtualenv venv --python=python3`
 3. Activate the virtual environment: `venv\Scripts\activate` (Windows) or `source venv/bin/activate` (Linux)
 4. Install requirements: `pip install -r requirements.txt`
 5. (Windows only) install pywin32: `pip install pywin32`
+6. Run setup with `python setup.py` to download age_gender_models
 
 
 *Launch*
