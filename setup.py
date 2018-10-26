@@ -18,7 +18,7 @@ for bin_file in bin_files:
 		while content:
 			local_file.write(content)
 			percentage = round(counter / total_chunks * 100, 1)
-			percentage_len = len(str(percentage)) + 10
+			percentage_len = len(str(percentage)) + 10  # 10 additional characters for text
 			content = response.read(100 * 1024)
 			counter += 1
 			sys.stdout.write(f"{percentage}% complete")
