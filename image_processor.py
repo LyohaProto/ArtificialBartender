@@ -6,6 +6,10 @@ from PIL import ImageFont
 
 
 class ImageProcessor(object):
+    """
+    Image processor class contains methods that help in loading neural network models and using them to process the
+    image
+    """
     def __init__(self, font_name, font_size=20):
         self.text_font = ImageFont.truetype(font_name, font_size)
         self.cv2_font = cv2.FONT_HERSHEY_SIMPLEX
@@ -30,6 +34,11 @@ class ImageProcessor(object):
         random.seed(time())
 
     def detect_faces(self, frame):
+        """
+        This method helps in Detecting and predicting age, gender and smile. Returns list of detected images with
+        predictions
+        :return: list of image detections and its respective predictions
+        """
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         faces = self.face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=8, minSize=(50, 50))
 

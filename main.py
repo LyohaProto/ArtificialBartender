@@ -46,7 +46,9 @@ PHRASES = {
             'female human'
         ],
         'FEMALE_FORMAL': [
-            'madame'
+            'madame',
+            'mam',
+            'miss'
         ],
         'MALE_INFORMAL': [
             'dude',
@@ -59,7 +61,8 @@ PHRASES = {
         'MALE_FORMAL': [
             'mister',
             'sir',
-            'male human'
+            'male human',
+            'handsome'
         ]
     },
     'PHRASES': {
@@ -81,7 +84,8 @@ PHRASES = {
             "Looking for something to drink?",
             "Lookin' for a drink to relax after a busy day?",
             "It's Friday, you made it! Can I offer you a drink?",
-            "Happy Friday! Can I get you something to drink?"
+            "Happy Friday! Can I get you something to drink?",
+            "I think deserve a drink after this long week, do you?"
         ],
         'MALE_FORMAL': [
             'Are you sure you are old enough to get a drink?',
@@ -107,7 +111,9 @@ PHRASES = {
         'Chardonnay',
         'Pinot Gris',
         'Rose',
-        'Pinot Noir'
+        'Pinot Noir',
+        'corona',
+        'Heineken-Lite'
     ]
 }
 
