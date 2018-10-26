@@ -11,7 +11,7 @@
 
 *Launch*
 
-main.py
+`./main.py`
 
 
 ***
